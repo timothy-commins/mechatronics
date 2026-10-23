@@ -11,18 +11,10 @@
 
 void _delay(long time_msec)
 {
-    long counts = time_msec * 125 / 32;   // turns milliseconds into timer counts
-
-    T1CONbits.TON = 0;        // timer off
-    T1CONbits.TCS = 0;       
-    T1CONbits.TCKPS = 0b10;   // (prescale 1:64)
-    TMR1 = 0;                 // start counting from 0
-    T1CONbits.TON = 1;        // timer on
-
-    while (TMR1 < counts) { } 
-
-    T1CONbits.TON = 0;        // timer off
+    unsigned long cycles = time_msec * 250;   // 250 cycles = 1 millisecond
+    __delay32(cycles);                        // wait that many cycles
 }
+
 
 void run(float mm) { // assume all lengths in mm and time is in msec
     float circumference = PI * WHEEL_DIAMETER;
@@ -74,8 +66,8 @@ int main(void) {
     ANSA = 0; //MAKES IT DIGITAL
     ANSB = 0;
     _TRISA6 = 0;  // sets it to output for pwm, 
-    _TRISB0 = 0;  //set this to pin 4
-    _TRISA1 = 0;  //sets pin 3 as output
+    _TRISB0 = 0;  //set this to pin 4    Pin 4 is left wheel
+    _TRISA1 = 0;  //sets pin 3 as output Pin 3 is right wheel
     _TRISB2 = 1;  //pin 6 button input
 
     OC1RS = 166;  
