@@ -17,6 +17,6 @@ Pin 14 - PWM For Right Motor
 Pin 15 - Right QRD
 Pin 16 - Middle QRD
 Pin 17 - Left QRD
-Pin 18 - Empty
+Pin 18 - Slide QRD
 Pin 19 - GND
 Pin 20 - VCC OR Power
