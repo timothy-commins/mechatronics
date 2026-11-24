@@ -8,8 +8,8 @@ Pin 5 - PWM For Left Motor
 Pin 6 - WAS Left IR. Should Be Left UltraSonic Sensor NOW. Still In Process Of Updating Code
 Pin 7 - Direction Pin For Left Wheel
 Pin 8 - WAS Right IR. Should be Right UltraSonic Sensor NOW. Still In Process Of Updating Code
-Pin 9 - Disable Pin For Right Motor
-Pin 10 - Disable Pin For Left Motor
+Pin 9 - Satelite Diode
+Pin 10 - Ball Cathcer IR
 Pin 11 - LED 1
 Pin 12 - LED 2
 Pin 13 - LED 3
