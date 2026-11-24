@@ -20,6 +20,8 @@
 #define WHEEL_DIAMETER 90    //diamiter in mm
 #define TURN90_MM    3200 //(honestly just mess with this number till it works) 
 #define PI           3.14159
+//#define time_msec 1000 // delay timer
+
 
 void _delay(long time_msec)
 {
@@ -29,6 +31,17 @@ void _delay(long time_msec)
 
 //
 void run(float mm) { // assume all lengths in mm and time is in msec
+    float circumference = PI * WHEEL_DIAMETER;
+    float revolutions = mm / circumference;
+    long time_msec = revolutions * 1000;  // long just makes it so that it can accept more #s than just an int or float
+
+    OC1RS = 10000;
+    OC1R = 5000;          //50% duty so motors run
+    _delay(time_msec);   //just waits while the motors go
+    OC1R = 0;            //duty 0 so motors stop
+}
+
+void run2(float mm) { // assume all lengths in mm and time is in msec
     float circumference = PI * WHEEL_DIAMETER;
     float revolutions = mm / circumference;
     long time_msec = revolutions * 1000;  // long just makes it so that it can accept more #s than just an int or float
@@ -117,15 +130,15 @@ int main(void) {
     /*our clock speed is 4MHz to do a 50Hz PWM period*/
     T2CONbits.TCS = 0; //internal clock
     T2CONbits.TCKPS = 0b01; //1:8 prescale
-    PR2 = 10000; // Timer period of 20ms assuming 
+//    PR2 = 10000; // Timer period of 20ms assuming 
     TMR2 = 0; //reset timer to 0
     
-    OC2CON2bits.SYNCSEL = 0x1F;  //sets pin 4 as a pwm. Servos
-    OC2CON1bits.OCTSEL = 0b111;
+    OC2CON2bits.SYNCSEL = 0b11111;  //sets pin 4 as a pwm. Servos
+    OC2CON1bits.OCTSEL = 0b000;
     OC2CON1bits.OCM = 0b110;
     OC2CON2bits.OCTRIG = 0;
-    OC2RS = 10000;
-    OC2R = 250;
+    OC2RS = 9999;
+    OC2R = 750;
     OC2CON1bits.OCM = 0b110;
     T2CONbits.TON = 1; //starts the timer
 
@@ -277,32 +290,112 @@ int main(void) {
                     state = ExtremeLeft;
                 }
                 
-//                else if (LeftQRD > Line_Threshold_Voltage && RightQRD > Line_Threshold_Voltage && MidQRD < Line_Threshold_Voltage && RightIR > Canyon_Threshold && LeftIR > Canyon_Threshold) {
-//                    // if the sharp sensors are seeing the sample drop off zones and the midQRD  is sensing white, then the robot turns to the correct zone
-//                    if (BallColorQRD > Line_Threshold_Voltage) {
-//                        //turn right to the black ball zone
-//                        _LATA1 = 0; //RIGHT WHEEL BACKWARDS
-//                        turn90();
-//                        _LATA1 = 1;
-//                        OC1RS = BaseSpeed; // Right Stepper motor PWM
-//                        OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
-//                        //_LATA4 = 1; //Disable Left Motor
-//                        OC3RS = BaseSpeed; // Left Stepper motor PWM
-//                        OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
-//                        OC2RS = 10000;
-//                        OC2R = 750; // sets Servo motor to 90 degrees
-//                        state = Black_drop;
-//                    }
-//                    
-//                    else if (BallColorQRD < Line_Threshold_Voltage){
-//                        // turn left to the white ball zone
-//                        _LATA2 = 1; //LEFT MOTOR BACKWARDS
-//                        turn90();
-//                        state = White_drop;
-//                    }
-//                }
+                else if (LeftQRD > Line_Threshold_Voltage && RightQRD > Line_Threshold_Voltage && MidQRD < Line_Threshold_Voltage && RightIR > Canyon_Threshold && LeftIR > Canyon_Threshold) {
+                    // if the sharp sensors are seeing the sample drop off zones and the midQRD  is sensing white, then the robot turns to the correct zone
+                    if (BallColorQRD > Line_Threshold_Voltage) {
+                        //turn right to the black ball zone
+                        run2(500);
+                        _LATA1 = 0; //RIGHT WHEEL BACKWARDS
+                        turn90();
+                        _LATA1 = 1;
+                        OC1RS = BaseSpeed; // Right Stepper motor PWM
+                        OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
+                        //_LATA4 = 1; //Disable Left Motor
+                        OC3RS = BaseSpeed; // Left Stepper motor PWM
+                        OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
+                        run2(2200);
+                        OC1RS = SlowSpeed;
+                        OC3RS = SlowSpeed;
+                        OC2RS = 10000;
+                        OC2R = 300; // sets Servo motor to 90 degrees
+                        _delay(16000);
+                        OC2R = 750;
+                        state = Black_drop;
+                    }
+                    
+                    else if (BallColorQRD < Line_Threshold_Voltage){
+                        // turn left to the white ball zone
+                        run2(500);
+                        _LATA2 = 1; //LEFT MOTOR BACKWARDS
+                        turn90();
+                        _LATA2 = 0;
+                        OC1RS = BaseSpeed; // Right Stepper motor PWM
+                        OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
+                        //_LATA4 = 1; //Disable Left Motor
+                        OC3RS = BaseSpeed; // Left Stepper motor PWM
+                        OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
+                        run2(2200);
+                        OC1RS = SlowSpeed;
+                        OC3RS = SlowSpeed;
+                        OC2RS = 10000;
+                        OC2R = 300; // sets Servo motor to 90 degrees
+                        _delay(16000);
+                        OC2R = 750;
+                        state = White_drop;
+                    }
+                }
                 
                 break;
+                
+            case Black_drop:
+                if (LeftQRD > Line_Threshold_Voltage && MidQRD > Line_Threshold_Voltage && RightQRD > Line_Threshold_Voltage) {
+                    _LATA1 = 0; //both motors in reverse
+                    _LATA2 = 1;
+                    OC1RS = BaseSpeed; // Right Stepper motor PWM
+                    OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
+                    //_LATA4 = 1; //Disable Left Motor
+                    OC3RS = BaseSpeed; // Left Stepper motor PWM
+                    OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
+                    run2(2200);
+                    _LATA1 = 1;
+                    turn90();
+                    _LATA2 = 0;
+                    run(3000);
+                    state = Forward;
+                }
+//                else if (LeftQRD < Line_Threshold_Voltage && MidQRD < Line_Threshold_Voltage && RightQRD < Line_Threshold_Voltage) {
+//                    _LATA1 = 1; //RIGHT MOTOR FORWARD
+//                    turn90();
+//                    _LATA2 = 0; //LEFT MOTOR FORWARD
+//                    OC1RS = BaseSpeed; // Right Stepper motor PWM
+//                    OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
+//                    //_LATA4 = 1; //Disable Left Motor
+//                    OC3RS = BaseSpeed; // Left Stepper motor PWM
+//                    OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
+//                    state = Forward;                                
+//                    }
+//                
+                break;
+                
+            case White_drop:
+                if (LeftQRD > Line_Threshold_Voltage && MidQRD > Line_Threshold_Voltage && RightQRD > Line_Threshold_Voltage) {
+                    _LATA1 = 0; //both motors in reverse
+                    _LATA2 = 1;
+                    OC1RS = BaseSpeed; // Right Stepper motor PWM
+                    OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
+                    //_LATA4 = 1; //Disable Left Motor
+                    OC3RS = BaseSpeed; // Left Stepper motor PWM
+                    OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
+                    run2(2200);
+                    _LATA2 = 0;
+                    turn90();
+                    _LATA1 = 1;
+                    run2(3000);
+                    state = Forward;
+                }
+//                else if (LeftQRD < Line_Threshold_Voltage && MidQRD < Line_Threshold_Voltage && RightQRD < Line_Threshold_Voltage) {
+//                    _LATA2 = 0; //Left MOTOR FORWARD
+//                    turn90();
+//                    _LATA1 = 1; //Right MOTOR FORWARD
+//                    OC1RS = BaseSpeed; // Right Stepper motor PWM
+//                    OC1R = OC1RS/2; // Right Stepper motor Duty Cycle
+//                    //_LATA4 = 1; //Disable Left Motor
+//                    OC3RS = BaseSpeed; // Left Stepper motor PWM
+//                    OC3R = OC3RS/2; // Left Stepper motor Duty Cycle
+//                    state = Forward;                                
+//                    }
+//                
+               break;
 
             case Right:
                 
